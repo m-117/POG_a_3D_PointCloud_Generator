@@ -7,13 +7,10 @@ namespace SceneGenerator
 {
     public class SceneChanger : MonoBehaviour
     {
-        public string TargetScene;
-
-        public void changeScene()
+        public void ChangeScene(string target)
         {
-            SceneManager.LoadScene("ImportScene");
+            SceneManager.LoadScene(target);
         }
-
     }
 }
 

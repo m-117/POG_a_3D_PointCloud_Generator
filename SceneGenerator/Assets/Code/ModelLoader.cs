@@ -108,7 +108,6 @@ namespace SceneGenerator
 
             Vector3 localCenter = bounds.center - model.transform.position;
             bounds.center = localCenter;
-            Debug.Log("The local bounds of this model is " + bounds);
 
             model.transform.rotation = currentRotation;
 

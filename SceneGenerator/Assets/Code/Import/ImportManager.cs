@@ -97,26 +97,13 @@ namespace SceneGenerator
                     importModelPaths.Add(file);
                 }
             }
-
-            foreach(string s in importModelPaths)
-            {
-                Debug.Log(s);
-            }
-
             modelIndex = 0;
             LoadNextModel();
-            //startModelImport();
         }
 
         public void LoadNextModel()
         {
-            if (modelIndex == importModelPaths.Count)
-            {
-                BackToMainMenu();
-            }
-
             GameObject model;
-
 
             if(modelLoader.TryLoadObject(importModelPaths[modelIndex], out model, GetScale(), basePosition))
             {
@@ -124,8 +111,6 @@ namespace SceneGenerator
                 submeshTextureList = new string[model.transform.GetChild(0).childCount, 12];
                 baseObject.Value = model;
                 selectedObject.Value = model.transform.GetChild(0).GetChild(0).gameObject;
-                //model.transform.position = basePosition;
-                importCam.GetComponent<OrbitCameraController>().target = model.transform.GetChild(0);
                 UpdateMeshDropdown();
                 UpdateCategoryDropdown();
                 info.UpdateModelInfo();
@@ -147,6 +132,21 @@ namespace SceneGenerator
 
             dataManager.SaveModelData();
 
+            modelIndex++;
+
+            if (modelIndex == importModelPaths.Count - 1)
+            {
+                BackToMainMenu();
+            }
+            else
+            {
+                LoadNextModel();
+            }
+
+        }
+
+        public void SkipModel()
+        {
             modelIndex++;
             LoadNextModel();
         }
@@ -235,18 +235,20 @@ namespace SceneGenerator
         }
 
 
-        public int CalculateDifficulty()
+        public float CalculateDifficulty()
         {
-            int diff = 0;
+            float diff = 0;
+            float sizeFactor = 2 - GetScale().x;
 
             int subModels = int.Parse(childMeshes.gameObject.GetComponent<Text>().text);
             int submeshes = int.Parse(totalSubmeshes.gameObject.GetComponent<Text>().text);
             int triangles = int.Parse(totalTriangles.gameObject.GetComponent<Text>().text);
 
-            int triMean = triangles / subModels / 100;
-            int additionalSubmeshes = (subModels - submeshes) / 2;
+            float triMean = triangles / subModels / 1000;
+            float additionalSubmeshes = (subModels - submeshes) / 2;
 
             diff = subModels + triMean + additionalSubmeshes;
+            diff *= sizeFactor;
 
             return diff;
         }
@@ -288,7 +290,6 @@ namespace SceneGenerator
             {
                 siblingIndex = t.GetSiblingIndex();
                 materialindex = 0;
-                Debug.Log(t.name);
 
                 if (t.gameObject.GetComponent<Outline>() != null)
                 {
@@ -304,8 +305,6 @@ namespace SceneGenerator
                     texture.LoadImage(bytes);
 
                     m.SetTexture("_MainTex", texture);
-
-                    
 
                     submeshTextureList[siblingIndex, materialindex] = textures.Items[rand];
                     materialindex++;

@@ -10,7 +10,7 @@ namespace SceneGenerator
 
         public string path { get; set; }
         public string[,] submeshTextures { get; set; }
-        public int difficulty { get; set; }
+        public float difficulty { get; set; }
         public Vector3 scale { get; set; }
         public string category { get; set; }
 

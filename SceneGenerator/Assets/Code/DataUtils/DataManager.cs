@@ -116,7 +116,7 @@ namespace SceneGenerator
             }
         }
 
-        public void InitPaths()
+        public void Init()
         {
             texPath.Value = Application.persistentDataPath + "/textures";
             modPath.Value = Application.persistentDataPath + "/models";
@@ -126,6 +126,7 @@ namespace SceneGenerator
 
             LoadTextureData();
             LoadModelData();
+            LoadCategories();
 
         }
 
@@ -142,11 +143,9 @@ namespace SceneGenerator
             if (!Directory.Exists(modPath.Value + "/" + newCat)) Directory.CreateDirectory(modPath.Value + "/" + newCat);
         }
 
-
-        void Start()
+        private void Start()
         {
-            InitPaths();
-            LoadCategories();
+            models = new List<string>();
         }
     }
 }

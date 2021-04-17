@@ -99,12 +99,12 @@ namespace SceneGenerator
                 SelectSubmodel(0);
             }
 
-            if (Input.GetKeyUp("w") || Input.GetKeyUp("up"))
+            if (Input.GetKeyUp("up"))
             {
                 SelectSubmodel(1);
             }
 
-            if (Input.GetKeyUp("s") || Input.GetKeyUp("down"))
+            if (Input.GetKeyUp("down"))
             {
                 SelectSubmodel(2);
             }

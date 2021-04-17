@@ -23,7 +23,7 @@ namespace SceneGenerator
         public void UpdateModelInfo()
         {
             objName.GetComponent<Text>().text = selectedObject.name;
-            triangles.GetComponent<Text>().text = "" + selectedObject.Value.GetComponent<MeshFilter>().mesh.triangles.Length;
+            triangles.GetComponent<Text>().text = "" + selectedObject.Value.GetComponent<MeshFilter>().mesh.triangles.Length/3;
             submeshes.GetComponent<Text>().text = "" + selectedObject.Value.GetComponent<MeshFilter>().mesh.subMeshCount;
 
             childMeshes.GetComponent<Text>().text = "" + baseObject.Value.transform.GetChild(0).childCount;
@@ -51,7 +51,7 @@ namespace SceneGenerator
                 triangleCount += child.GetComponent<MeshFilter>().mesh.triangles.Length;
             }
 
-            return triangleCount;
+            return triangleCount/3;
         }
 
     }
