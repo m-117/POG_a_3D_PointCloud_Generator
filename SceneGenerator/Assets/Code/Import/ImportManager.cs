@@ -105,6 +105,7 @@ namespace SceneGenerator
         {
             GameObject model;
 
+
             if(modelLoader.TryLoadObject(importModelPaths[modelIndex], out model, GetScale(), basePosition, ""))
             {
                 Destroy(baseObject.Value);
@@ -147,8 +148,16 @@ namespace SceneGenerator
 
         public void SkipModel()
         {
-            modelIndex++;
-            LoadNextModel();
+            importModelPaths.Remove(importModelPaths[modelIndex]);
+            if(importModelPaths.Count < modelIndex)
+            {
+                BackToMainMenu();
+            }
+            else
+            {
+                LoadNextModel();
+            }
+
         }
 
         public void UpdateMeshDropdown()
@@ -174,7 +183,7 @@ namespace SceneGenerator
             selectedObject.Value.GetComponent<Outline>().enabled = true;
 
             int i = selectedObject.Value.transform.GetSiblingIndex();
-            submeshTextureList[i, selectedSubmesh.Value] = img.name;
+            submeshTextureList[i, selectedSubmesh.Value] = dataManager.texPath.Value + "/" + img.name;
         }
 
         public void UpdateCategoryDropdown()

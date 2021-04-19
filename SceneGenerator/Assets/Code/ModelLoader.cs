@@ -154,9 +154,9 @@ namespace SceneGenerator
         {
             Bounds bounds = CalculateLocalBounds(model);
 
-            Vector3 randPos = new Vector3(UnityEngine.Random.Range(-2.5f + (bounds.size.x / 2), 2.5f - (bounds.size.x / 2)),
-                UnityEngine.Random.Range(-1.5f + (bounds.size.y / 2), 1.5f - (bounds.size.y / 2)),
-                UnityEngine.Random.Range(-2.5f + (bounds.size.z / 2), 2.5f - (bounds.size.z / 2)));
+            Vector3 randPos = new Vector3(UnityEngine.Random.Range(-2.5f + (bounds.size.x), 2.5f - (bounds.size.x)),
+                UnityEngine.Random.Range(-1.5f + (bounds.size.y), 1.5f - (bounds.size.y)),
+                UnityEngine.Random.Range(-2.5f + (bounds.size.z), 2.5f - (bounds.size.z)));
 
             model.transform.Translate(randPos);
         }

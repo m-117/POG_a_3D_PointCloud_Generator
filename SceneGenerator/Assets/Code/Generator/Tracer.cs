@@ -38,7 +38,7 @@ namespace SceneGenerator
         {
             Debug.Log("Start Trace Routine. Input is perspectives: " + perspectives + " and resolution:" + resolution);
 
-            sceneGen.DestroyRigidbody();
+            //sceneGen.DestroyRigidbody();
 
             dataPoints = new List<Point>();
 
@@ -49,7 +49,7 @@ namespace SceneGenerator
 
             Trace(perspectives, resolution, "Default");
 
-            Trace(perspectives, 50, "Box");
+            Trace(perspectives, 200, "Box");
 
         }
 
@@ -116,9 +116,9 @@ namespace SceneGenerator
 
                 ray.direction = sample - hit.point;
 
-                if (Physics.Raycast(ray, out shadeHit, 100, 0))
+                if (Physics.Raycast(ray, out shadeHit, 100f, 1 << LayerMask.NameToLayer("Default")))
                 {
-                    if (shadeHit.collider.CompareTag("light"))
+                    if (shadeHit.collider.gameObject.GetComponent<Label>().label.Equals("Light"))
                     {
                         cnt++;
                         dist = shadeHit.distance;
@@ -130,7 +130,7 @@ namespace SceneGenerator
 
             if (angle < 0) angle = 0;
 
-            Color directIllum = Vector4.Scale(lightColor, diffuseCoefficient) * (1 - Mathf.Pow(dist / l.range, 2)) * cnt / 2 * angle;
+            Color directIllum = Vector4.Scale(lightColor, diffuseCoefficient) * (1 - Mathf.Pow(dist / l.range, 2)) * cnt * angle;
 
             Color shadedColor = color + directIllum;
 
@@ -252,12 +252,12 @@ namespace SceneGenerator
 
             foreach(Point p in dataPoints)
             {
-                outputForAI.Append('\n').Append(p.coords.x).Append(';')
-                    .Append(p.coords.y).Append(';')
-                    .Append(p.coords.z).Append(';')
-                    .Append(p.color.r).Append(';')
-                    .Append(p.color.g).Append(';')
-                    .Append(p.color.b).Append(';')
+                outputForAI.Append('\n').Append(p.coords.x.ToString().Replace(",", ".")).Append(';')
+                    .Append(p.coords.y.ToString().Replace(",", ".")).Append(';')
+                    .Append(p.coords.z.ToString().Replace(",", ".")).Append(';')
+                    .Append(p.color.r.ToString().Replace(",", ".")).Append(';')
+                    .Append(p.color.g.ToString().Replace(",", ".")).Append(';')
+                    .Append(p.color.b.ToString().Replace(",", ".")).Append(';')
                     .Append(p.type);
             }
 
@@ -265,17 +265,20 @@ namespace SceneGenerator
 
             foreach (Point p in dataPoints)
             {
-                outputForDisplay.Append(p.coords.x).Append(';')
-                    .Append(p.coords.y).Append(';')
-                    .Append(p.coords.z).Append(';')
-                    .Append(p.color.r).Append(';')
-                    .Append(p.color.g).Append(';')
-                    .Append(p.color.b).Append('\n');
+                outputForDisplay.Append(p.coords.x.ToString().Replace(",", ".")).Append(';')
+                    .Append(p.coords.y.ToString().Replace(",", ".")).Append(';')
+                    .Append(p.coords.z.ToString().Replace(",", ".")).Append(';')
+                    .Append(p.color.r.ToString().Replace(",", ".")).Append(';')
+                    .Append(p.color.g.ToString().Replace(",", ".")).Append(';')
+                    .Append(p.color.b.ToString().Replace(",", ".")).Append('\n');
             }
+
+
 
             //dataManager.WriteToCSV(outputForAI.ToString());
 
-            dataManager.WriteToCSV(outputForDisplay.ToString());
+
+            dataManager.WriteToCSV(outputForDisplay.ToString(), sceneGen.usedDiff);
 
             //List<string[]> rowData = new List<string[]>();
 

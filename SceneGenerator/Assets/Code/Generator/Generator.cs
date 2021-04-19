@@ -33,16 +33,32 @@ namespace SceneGenerator
 
         public IntVariable diff;
 
+        public int usedDiff;
+
 
         public void GenerateDataSet()
+        {
+            //for(int i = 0; i < datasetSize; i++)
+            //{
+            //    GenerateScene();
+
+            //    tracer.TraceScene();
+
+            //    tracer.ExportDataToCSV();
+            //}
+            StartCoroutine(SetCoroutine());
+        }
+
+        IEnumerator SetCoroutine()
         {
             for(int i = 0; i < datasetSize; i++)
             {
                 GenerateScene();
-
+                yield return new WaitForSecondsRealtime(15);
                 tracer.TraceScene();
-
+                yield return new WaitForSecondsRealtime(15);
                 tracer.ExportDataToCSV();
+                yield return new WaitForSecondsRealtime(2);
             }
         }
 
@@ -80,7 +96,8 @@ namespace SceneGenerator
                 }
                 //models.Remove(model);
             }
-            AddRigidbody();
+            //AddRigidbody();
+            StartCoroutine(ApplyGravity());
         }
 
         public void ToggleCategory(Toggle toggle)
@@ -139,8 +156,9 @@ namespace SceneGenerator
         public float GetDifficulty()
         {
             float difficulty = randomDiff ? Random.Range(1, 10) : diff.Value;
+            usedDiff = (int)difficulty;
             tracer.perspectives = 6 - (int)(difficulty/2);
-            difficulty = 10 * Mathf.Pow(1.7f, difficulty) / (1 + 0.2f*(tracer.perspectives-1));
+            difficulty = 25 * Mathf.Pow(1.4f, difficulty) / (1 + 0.2f*(tracer.perspectives-1));
             return difficulty;
         }
 
@@ -173,6 +191,43 @@ namespace SceneGenerator
                     t.gameObject.AddComponent<MeshCollider>();
                 }
             }
+        }
+
+        IEnumerator ApplyGravity()
+        {
+            foreach (GameObject obj in loadedModels)
+            {
+                foreach (Transform t in obj.transform.GetChild(0))
+                {
+                    Destroy(t.GetComponent<MeshCollider>());
+                }
+                obj.AddComponent<BoxCollider>();
+                Bounds bounds = modelLoader.CalculateLocalBounds(obj.transform.GetChild(0).gameObject);
+                obj.GetComponent<BoxCollider>().size = bounds.size;
+                obj.GetComponent<BoxCollider>().center = bounds.center;
+                obj.AddComponent<Rigidbody>().useGravity = true;
+            }
+
+            yield return new WaitForSecondsRealtime(5);
+
+            foreach (GameObject obj in loadedModels)
+            {
+                bool gravity = obj.GetComponent<Rigidbody>().useGravity;
+                obj.GetComponent<Rigidbody>().useGravity = !gravity;
+                Destroy(obj.GetComponent<Rigidbody>());
+                Destroy(obj.GetComponent<BoxCollider>());
+            }
+
+            yield return new WaitForSecondsRealtime(2);
+
+            foreach (GameObject obj in loadedModels)
+            {
+                foreach (Transform t in obj.transform.GetChild(0))
+                {
+                    t.gameObject.AddComponent<MeshCollider>();
+                }
+            }
+
         }
 
 
