@@ -105,7 +105,7 @@ namespace SceneGenerator
         {
             GameObject model;
 
-            if(modelLoader.TryLoadObject(importModelPaths[modelIndex], out model, GetScale(), basePosition))
+            if(modelLoader.TryLoadObject(importModelPaths[modelIndex], out model, GetScale(), basePosition, ""))
             {
                 Destroy(baseObject.Value);
                 submeshTextureList = new string[model.transform.GetChild(0).childCount, 12];
@@ -260,7 +260,7 @@ namespace SceneGenerator
             switch (selectedSize.Value)
             {
                 case "S":
-                    scale = new Vector3(0.25f, 0.25f, 0.25f);
+                    scale = new Vector3(0.5f, 0.5f, 0.5f);
                     break;
                 case "M":
                     scale = new Vector3(0.75f, 0.75f, 0.75f);

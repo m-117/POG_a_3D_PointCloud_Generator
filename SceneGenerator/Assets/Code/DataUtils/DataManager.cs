@@ -147,5 +147,17 @@ namespace SceneGenerator
         {
             models = new List<string>();
         }
+
+        public void WriteToCSV(string content)
+        {
+            if (!Directory.Exists(Application.persistentDataPath + "/data")) Directory.CreateDirectory(Application.persistentDataPath + "/data");
+
+            string path = Application.persistentDataPath + "/data/SceneData_" + DateTime.Now.ToString().Split(' ')[0] + "_" + 
+                DateTime.Now.ToString().Split(' ')[1].Split(':')[0] +
+                DateTime.Now.ToString().Split(' ')[1].Split(':')[1] +
+                DateTime.Now.ToString().Split(' ')[1].Split(':')[2] + ".csv";
+            File.WriteAllText(path, content);
+        }
+
     }
 }

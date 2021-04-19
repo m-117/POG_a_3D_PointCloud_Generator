@@ -23,7 +23,7 @@ namespace SceneGenerator
             return assetLoaderOptions;
         }
 
-        public bool TryLoadObject(string filename, out GameObject model, Vector3 scale, Vector3 basePos)
+        public bool TryLoadObject(string filename, out GameObject model, Vector3 scale, Vector3 basePos, string category)
         {
             model = null;
             if (string.IsNullOrEmpty(filename)) return false;
@@ -36,6 +36,7 @@ namespace SceneGenerator
                     model = assetLoader.LoadFromFileWithTextures(filename, assetLoaderOptions);
                     DestroyEmptyChild(model);
                     AddMeshColliders(model);
+                    AddLabels(model, category);
                     ResizeModel(model.transform.GetChild(0).gameObject, scale);
                     AdjustModelPosition(model, basePos);
                     OptimizeModel(model);
@@ -63,10 +64,11 @@ namespace SceneGenerator
 
         public bool LoadObjectWithMaterials(ModelData data, out GameObject model, Vector3 basePos)
         {
-            if (TryLoadObject(data.path, out model, data.scale, basePos))
+            if (TryLoadObject(data.path, out model, data.scale, basePos, data.category))
             {
                 model.transform.localScale = data.scale;
                 ApplyMaterials(data.submeshTextures, model);
+                RandomPosition(model);
                 return true;
             }
             else return false;
@@ -80,8 +82,22 @@ namespace SceneGenerator
 
                 for(int j = 0; j < mesh.subMeshCount; j++)
                 {
-                    childObject.GetComponent<MeshRenderer>().materials[j]
-                        .SetTexture("_MainTex", Resources.Load(textures[childObject.GetSiblingIndex(),j]) as Texture2D);
+                    string tex = textures[childObject.GetSiblingIndex(), j];
+
+                    if(tex != null)
+                    {
+                        byte[] bytes = File.ReadAllBytes(tex);
+                        Texture2D texture = new Texture2D(1, 1);
+                        texture.LoadImage(bytes);
+                        texture.Apply();
+
+                        childObject.GetComponent<MeshRenderer>().materials[j]
+                        .SetTexture("_MainTex", texture);
+                    }
+                    else
+                    {
+                        childObject.GetComponent<MeshRenderer>().materials[j].SetColor("_MainTex", Color.white);
+                    }
                 }
             }
         }
@@ -91,6 +107,15 @@ namespace SceneGenerator
             foreach(Transform t in model.transform.GetChild(0))
             {
                 t.gameObject.AddComponent<MeshCollider>();
+            }
+        }
+
+        public void AddLabels(GameObject model, string label)
+        {
+            foreach(Transform t in model.transform.GetChild(0))
+            {
+                t.gameObject.AddComponent<Label>();
+                t.gameObject.GetComponent<Label>().label = label;
             }
         }
 
@@ -123,6 +148,17 @@ namespace SceneGenerator
 
             model.transform.localScale = new Vector3(scalingFactor, scalingFactor, scalingFactor);
 
+        }
+
+        public void RandomPosition(GameObject model)
+        {
+            Bounds bounds = CalculateLocalBounds(model);
+
+            Vector3 randPos = new Vector3(UnityEngine.Random.Range(-2.5f + (bounds.size.x / 2), 2.5f - (bounds.size.x / 2)),
+                UnityEngine.Random.Range(-1.5f + (bounds.size.y / 2), 1.5f - (bounds.size.y / 2)),
+                UnityEngine.Random.Range(-2.5f + (bounds.size.z / 2), 2.5f - (bounds.size.z / 2)));
+
+            model.transform.Translate(randPos);
         }
 
         public void AdjustModelPosition(GameObject model, Vector3 basePos)
