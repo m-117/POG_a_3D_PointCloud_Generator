@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Text;
 using UnityEngine;
+using UnityEngine.UI;
 
 namespace SceneGenerator
 {
@@ -25,6 +26,12 @@ namespace SceneGenerator
 
         public Vector3 ambientCoefficient = new Vector3(0.1f, 0.1f, 0.1f);
 
+        public IntVariable noise;
+
+        public Text pointCount;
+
+        public Text traceTime;
+
         public bool displayActive;
 
         private class Point
@@ -32,29 +39,42 @@ namespace SceneGenerator
             public Vector3 coords { get; set; }
             public Color color { get; set; }
             public string type { get; set; }
+            public int count { get; set; }
         }
 
         public void TraceScene()
         {
-            Debug.Log("Start Trace Routine. Input is perspectives: " + perspectives + " and resolution:" + resolution);
+            DateTime startTime = DateTime.Now;
 
-            //sceneGen.DestroyRigidbody();
+            Debug.Log("Start Trace Routine. Input is perspectives: " + perspectives + " and resolution:" + resolution);
 
             dataPoints = new List<Point>();
 
-            //int layerMaskModels = 1 << 0;
-            //layerMaskModels = ~layerMaskModels;
-            //int layerMaskBox = 1 << 8;
-            //layerMaskBox = ~layerMaskBox;
-
             Trace(perspectives, resolution, "Default");
 
-            Trace(perspectives, 200, "Box");
+            Trace(perspectives, 300, "Box");
 
+
+
+            UpdateTraceStats((DateTime.Now - startTime).Seconds);
         }
 
         private Color CalcColor(RaycastHit hit)
         {
+            if (hit.collider.gameObject.GetComponent<Label>().label.Equals("Wall"))
+            {
+                return Shade(new Color(0.1f, 0, 0, 1), hit);
+            }
+            if (hit.collider.gameObject.GetComponent<Label>().label.Equals("Floor"))
+            {
+                return Shade(new Color(0, 0.1f, 0, 1), hit);
+            }
+            if (hit.collider.gameObject.GetComponent<Label>().label.Equals("Ceiling"))
+            {
+                return Shade(new Color(0, 0, 0.1f, 1), hit);
+            }
+
+
             Mesh mesh = hit.collider.GetComponent<MeshFilter>().mesh;
             Renderer renderer = hit.collider.GetComponent<MeshRenderer>();
             Texture2D texture2D = null;
@@ -133,8 +153,17 @@ namespace SceneGenerator
             Color directIllum = Vector4.Scale(lightColor, diffuseCoefficient) * (1 - Mathf.Pow(dist / l.range, 2)) * cnt * angle;
 
             Color shadedColor = color + directIllum;
+            
+            return ClampColor(shadedColor);
+        }
 
-            return shadedColor;
+        public Color ClampColor(Color c)
+        {
+            c.r = Mathf.Clamp(c.r, 0, 1.0f);
+            c.g = Mathf.Clamp(c.g, 0, 1.0f);
+            c.b = Mathf.Clamp(c.b, 0, 1.0f);
+
+            return c;
         }
 
         public void Trace(int perspectives, int resolution, string layer)
@@ -142,6 +171,9 @@ namespace SceneGenerator
             Debug.Log("Starting Trace()");
 
             float step = 1.0f / resolution;
+
+            float x;
+            float y;
 
             Ray ray;
 
@@ -151,52 +183,28 @@ namespace SceneGenerator
             {
                 activeCam = traceCams.Items[k];
 
-                Debug.Log("Entered Loop. ActiveCam : " + activeCam.name);
-
                 for (int i = 0; i < resolution; i++)
                 {
                     for (int j = 0; j < resolution; j++)
                     {
-                        ray = activeCam.ViewportPointToRay(new Vector3(i * step, j * step, 0));
-                        // Raycast mit Verdeckung (only first hit)
-                        //
-                        //if(Physics.Raycast(ray, out hit, 10))
-                        //{
-                        //    p.coords = hit.point;
-                        //    p.type = hit.collider.tag;
-                        //    p.color = calcColor(hit);
-                        //    //save p
-                        //    GameObject sphere = GameObject.CreatePrimitive(PrimitiveType.Sphere);
-                        //    sphere.transform.localScale = new Vector3(0.01f, 0.01f, 0.01f);
-                        //    sphere.transform.position = p.coords;
-                        //    sphere.GetComponent<Renderer>().material.SetColor("_Color", p.color);
-                        //    sphere.tag = p.type;
-                        //    sphere.GetComponent<Collider>().enabled = false;
-                        //}
+                        x = i * step + UnityEngine.Random.Range(-step * noise.Value, step * noise.Value);
+                        y = j * step + UnityEngine.Random.Range(-step * noise.Value, step * noise.Value);
 
+                        ray = activeCam.ViewportPointToRay(new Vector3(x, y, 0));
 
-                        // Durchdringender Raycast
-                        //
                         try
                         {
                             foreach (RaycastHit h in Physics.RaycastAll(ray, 100f, 1 << LayerMask.NameToLayer(layer)))
                             {
+                                Vector3 coords = new Vector3(h.point.x + 500, h.point.y, h.point.z - 500);
+
                                 dataPoints.Add(new Point()
                                 {
-                                    coords = h.point,
-                                    type = h.collider.gameObject.GetComponent<Label>().label,
-                                    color = CalcColor(h)
+                                    coords = coords,
+                                    type = h.collider.GetComponent<Label>().label,
+                                    color = CalcColor(h),
+                                    count = h.collider.gameObject.GetComponent<Label>().counter
                                 });
-                                //p.coords = h.point;
-                                //p.type = h.collider.gameObject.GetComponent<Label>().label;
-                                //p.color = CalcColor(h);
-                                //dataPoints.Add(p);
-                                //GameObject sphere = GameObject.CreatePrimitive(PrimitiveType.Sphere);
-                                //sphere.transform.localScale = new Vector3(0.01f, 0.01f, 0.01f);
-                                //sphere.transform.position = p.coords;
-                                //sphere.GetComponent<Renderer>().material.SetColor("_Color", p.color);
-                                //sphere.tag = p.type;
-                                //sphere.GetComponent<Collider>().enabled = false;
                             }
                         }
                         catch(Exception)
@@ -206,15 +214,6 @@ namespace SceneGenerator
                     }
                 }
             }
-
-            Debug.Log("Points:" + dataPoints.Count);
-
-            //foreach (Point s in dataPoints)
-            //{
-            //    Debug.Log("Point at:" + s.coords);
-            //    Debug.Log("Point Color:" + s.color);
-            //    Debug.Log("Point LabeL:" + s.type);
-            //}
         }
 
         public void DisplayDatapoints()
@@ -248,7 +247,7 @@ namespace SceneGenerator
         public void ExportDataToCSV()
         {
 
-            StringBuilder outputForAI = new StringBuilder("X;Y;Z;R;G;B;Label");
+            StringBuilder outputForAI = new StringBuilder("X;Y;Z;R;G;B;Label;Count");
 
             foreach(Point p in dataPoints)
             {
@@ -258,7 +257,7 @@ namespace SceneGenerator
                     .Append(p.color.r.ToString().Replace(",", ".")).Append(';')
                     .Append(p.color.g.ToString().Replace(",", ".")).Append(';')
                     .Append(p.color.b.ToString().Replace(",", ".")).Append(';')
-                    .Append(p.type);
+                    .Append(p.type).Append(';').Append(p.count.ToString());
             }
 
             StringBuilder outputForDisplay = new StringBuilder("");
@@ -273,57 +272,15 @@ namespace SceneGenerator
                     .Append(p.color.b.ToString().Replace(",", ".")).Append('\n');
             }
 
+            dataManager.WriteToCSV(outputForAI.ToString(), sceneGen.usedDiff, "xyzrgblc", dataPoints.Count);
 
+            dataManager.WriteToCSV(outputForDisplay.ToString(), sceneGen.usedDiff, "xyzrgb", dataPoints.Count);
+        }
 
-            //dataManager.WriteToCSV(outputForAI.ToString());
-
-
-            dataManager.WriteToCSV(outputForDisplay.ToString(), sceneGen.usedDiff);
-
-            //List<string[]> rowData = new List<string[]>();
-
-            //string[] rowDataTemp = new string[7];
-            //rowDataTemp[0] = "X";
-            //rowDataTemp[1] = "Y";
-            //rowDataTemp[2] = "Z";
-            //rowDataTemp[3] = "R";
-            //rowDataTemp[4] = "G";
-            //rowDataTemp[5] = "B";
-            //rowDataTemp[6] = "Label";
-            //rowData.Add(rowDataTemp);
-
-            //// You can add up the values in as many cells as you want.
-            //for (int i = 0; i < 10; i++)
-            //{
-            //    rowDataTemp = new string[3];
-            //    rowDataTemp[0] = "Sushanta" + i; // name
-            //    rowDataTemp[1] = "" + i; // ID
-            //    rowDataTemp[2] = "$" + UnityEngine.Random.Range(5000, 10000); // Income
-            //    rowData.Add(rowDataTemp);
-            //}
-
-            //string[][] output = new string[rowData.Count][];
-
-            //for (int i = 0; i < output.Length; i++)
-            //{
-            //    output[i] = rowData[i];
-            //}
-
-            //int length = output.GetLength(0);
-            //string delimiter = ",";
-
-            //StringBuilder sb = new StringBuilder();
-
-            //for (int index = 0; index < length; index++)
-            //    sb.AppendLine(string.Join(delimiter, output[index]));
-
-            ////DataManager.WriteCSV(sb);
-
-            //string filePath = getPath();
-
-            //StreamWriter outStream = System.IO.File.CreateText(filePath);
-            //outStream.WriteLine(sb);
-            //outStream.Close();
+        public void UpdateTraceStats(double timeToTrace)
+        {
+            pointCount.text = dataPoints.Count.ToString();
+            traceTime.text = timeToTrace.ToString() + "s";
         }
 
         private void Start()
@@ -342,7 +299,14 @@ namespace SceneGenerator
             GameObject.Find("PlaneBackCam").GetComponent<Label>().label = "Wall";
             GameObject.Find("PlaneRightCam").GetComponent<Label>().label = "Wall";
             GameObject.Find("PlaneLeftCam").GetComponent<Label>().label = "Wall";
-            GameObject.Find("LightDummy").AddComponent<Label>().label = "Light";
+            GameObject.Find("LightDummy").GetComponent<Label>().label = "Light";
+            GameObject.Find("PlaneDownCam").GetComponent<Label>().counter = 1;
+            GameObject.Find("PlaneUpCam").GetComponent<Label>().counter = 1;
+            GameObject.Find("PlaneFrontCam").GetComponent<Label>().counter = 1;
+            GameObject.Find("PlaneBackCam").GetComponent<Label>().counter = 2;
+            GameObject.Find("PlaneRightCam").GetComponent<Label>().counter = 3;
+            GameObject.Find("PlaneLeftCam").GetComponent<Label>().counter = 4;
+            GameObject.Find("LightDummy").GetComponent<Label>().counter = 1;
 
         }
     }

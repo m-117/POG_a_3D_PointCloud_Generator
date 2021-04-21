@@ -33,6 +33,16 @@ namespace SceneGenerator
 
         public IntVariable diff;
 
+        public IntVariable noise;
+
+        public Text modelCount;
+
+        public Text meshCount;
+
+        public Text difficulty;
+
+        public Text triangleCount;
+
         public int usedDiff;
 
 
@@ -54,17 +64,24 @@ namespace SceneGenerator
             for(int i = 0; i < datasetSize; i++)
             {
                 GenerateScene();
-                yield return new WaitForSecondsRealtime(15);
+                yield return new WaitForSecondsRealtime(25);
                 tracer.TraceScene();
-                yield return new WaitForSecondsRealtime(15);
+                yield return new WaitForSecondsRealtime(5);
                 tracer.ExportDataToCSV();
-                yield return new WaitForSecondsRealtime(2);
+                yield return new WaitForSecondsRealtime(4);
             }
         }
 
         public void GenerateScene()
         {
             DestroyAllLoadedModels();
+
+            Dictionary<string, int> counter = new Dictionary<string, int>();
+
+            foreach(string s in chosenCategories.Items)
+            {
+                counter.Add(s, 0);
+            }
 
             float remainingDifficulty = GetDifficulty();
             GameObject dummy;
@@ -92,12 +109,20 @@ namespace SceneGenerator
                 if (modelLoader.LoadObjectWithMaterials(model, out dummy, basePos))
                 {
                     remainingDifficulty -= model.difficulty;
+                    counter[model.category]++;
+                    foreach(Transform child in dummy.transform.GetChild(0))
+                    {
+                        child.GetComponent<Label>().counter = counter[model.category];
+                    }
                     loadedModels.Add(dummy);
                 }
                 //models.Remove(model);
             }
             //AddRigidbody();
+            
             StartCoroutine(ApplyGravity());
+
+            UpdateSceneInfo(loadedModels);
         }
 
         public void ToggleCategory(Toggle toggle)
@@ -140,6 +165,11 @@ namespace SceneGenerator
             GameObject.Find("DiffTextSet").GetComponent<Text>().text = diff.Value.ToString();
         }
 
+        public void SetNoise(Slider slider)
+        {
+            noise.Value = (int)slider.value;
+        }
+
         public void SetResolution(InputField input)
         {
             int res = int.Parse(input.text);
@@ -162,37 +192,6 @@ namespace SceneGenerator
             return difficulty;
         }
 
-        public void AddRigidbody()
-        {
-            foreach(GameObject obj in loadedModels)
-            {
-                foreach(Transform t in obj.transform.GetChild(0))
-                {
-                    Destroy(t.GetComponent<MeshCollider>());
-                }
-                obj.AddComponent<BoxCollider>();
-                Bounds bounds = modelLoader.CalculateLocalBounds(obj.transform.GetChild(0).gameObject);
-                obj.GetComponent<BoxCollider>().size = bounds.size;
-                obj.GetComponent<BoxCollider>().center = bounds.center;
-                obj.AddComponent<Rigidbody>().useGravity = true;
-            }
-        }
-
-        public void DestroyRigidbody()
-        {
-            foreach(GameObject obj in loadedModels)
-            {
-                bool gravity = obj.GetComponent<Rigidbody>().useGravity;
-                obj.GetComponent<Rigidbody>().useGravity = !gravity;
-                Destroy(obj.GetComponent<Rigidbody>());
-                Destroy(obj.GetComponent<BoxCollider>());
-                foreach (Transform t in obj.transform.GetChild(0))
-                {
-                    t.gameObject.AddComponent<MeshCollider>();
-                }
-            }
-        }
-
         IEnumerator ApplyGravity()
         {
             foreach (GameObject obj in loadedModels)
@@ -200,25 +199,27 @@ namespace SceneGenerator
                 foreach (Transform t in obj.transform.GetChild(0))
                 {
                     Destroy(t.GetComponent<MeshCollider>());
+                    t.gameObject.AddComponent<BoxCollider>();
                 }
-                obj.AddComponent<BoxCollider>();
-                Bounds bounds = modelLoader.CalculateLocalBounds(obj.transform.GetChild(0).gameObject);
-                obj.GetComponent<BoxCollider>().size = bounds.size;
-                obj.GetComponent<BoxCollider>().center = bounds.center;
                 obj.AddComponent<Rigidbody>().useGravity = true;
             }
 
-            yield return new WaitForSecondsRealtime(5);
+            yield return new WaitForSecondsRealtime(10);
+
 
             foreach (GameObject obj in loadedModels)
             {
                 bool gravity = obj.GetComponent<Rigidbody>().useGravity;
                 obj.GetComponent<Rigidbody>().useGravity = !gravity;
                 Destroy(obj.GetComponent<Rigidbody>());
-                Destroy(obj.GetComponent<BoxCollider>());
+
+                foreach (Transform t in obj.transform.GetChild(0))
+                {
+                    Destroy(t.gameObject.GetComponent<BoxCollider>());
+                }
             }
 
-            yield return new WaitForSecondsRealtime(2);
+            yield return new WaitForSecondsRealtime(5);
 
             foreach (GameObject obj in loadedModels)
             {
@@ -227,6 +228,31 @@ namespace SceneGenerator
                     t.gameObject.AddComponent<MeshCollider>();
                 }
             }
+
+        }
+
+        public void UpdateSceneInfo(IList<GameObject> loadedModels)
+        {
+            modelCount.text = loadedModels.Count.ToString();
+
+            int meshes = 0;
+            int triangles = 0;
+
+            foreach(GameObject g in loadedModels)
+            {
+                meshes += g.transform.GetChild(0).childCount;
+
+                foreach(Transform child in g.transform.GetChild(0))
+                {
+                    triangles += child.GetComponent<MeshFilter>().mesh.triangles.Length/3;
+                }
+            }
+
+            triangleCount.text = triangles.ToString();
+
+            meshCount.text = meshes.ToString();
+
+            difficulty.text = usedDiff.ToString();
 
         }
 
