@@ -105,8 +105,7 @@ namespace SceneGenerator
         {
             GameObject model;
 
-
-            if(modelLoader.TryLoadObject(importModelPaths[modelIndex], out model, GetScale(), basePosition, ""))
+            if (modelLoader.TryLoadObject(importModelPaths[modelIndex], out model, GetScale(), basePosition, ""))
             {
                 Destroy(baseObject.Value);
                 submeshTextureList = new string[model.transform.GetChild(0).childCount, 12];
@@ -149,7 +148,7 @@ namespace SceneGenerator
         public void SkipModel()
         {
             importModelPaths.Remove(importModelPaths[modelIndex]);
-            if(importModelPaths.Count < modelIndex)
+            if(modelIndex == importModelPaths.Count)
             {
                 BackToMainMenu();
             }
@@ -183,7 +182,7 @@ namespace SceneGenerator
             selectedObject.Value.GetComponent<Outline>().enabled = true;
 
             int i = selectedObject.Value.transform.GetSiblingIndex();
-            submeshTextureList[i, selectedSubmesh.Value] = dataManager.texPath.Value + "/" + img.name;
+            submeshTextureList[i, selectedSubmesh.Value - 1] = dataManager.texPath.Value + "/" + img.name;
         }
 
         public void UpdateCategoryDropdown()
@@ -199,12 +198,13 @@ namespace SceneGenerator
         {
             string newCategoryName = newCategoryInput.text;
 
-            if (!categories.Items.Contains(newCategoryName))
+            foreach(string s in categories.Items)
             {
-                categories.Add(newCategoryName);
-                dataManager.CreateCategoryDir(newCategoryName);
-                UpdateCategoryDropdown();
+                if (s.StartsWith(newCategoryName)) return;
             }
+            categories.Add(newCategoryName + "_" + (categories.Items.Count+4));
+            dataManager.CreateCategoryDir(newCategoryName + "_" + (categories.Items.Count+4));
+            UpdateCategoryDropdown();
         }
 
         public void ToggleCategoryDialog(GameObject window)
@@ -269,13 +269,13 @@ namespace SceneGenerator
             switch (selectedSize.Value)
             {
                 case "S":
-                    scale = new Vector3(0.5f, 0.5f, 0.5f);
+                    scale = new Vector3(1, 1, 1);
                     break;
                 case "M":
-                    scale = new Vector3(0.75f, 0.75f, 0.75f);
+                    scale = new Vector3(1.25f, 1.25f, 1.25f);
                     break;
                 case "L":
-                    scale = new Vector3(1, 1, 1);
+                    scale = new Vector3(1.5f, 1.5f, 1.5f);
                     break;
             }
 

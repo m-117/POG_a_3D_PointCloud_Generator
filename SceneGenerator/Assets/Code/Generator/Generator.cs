@@ -48,25 +48,17 @@ namespace SceneGenerator
 
         public void GenerateDataSet()
         {
-            //for(int i = 0; i < datasetSize; i++)
-            //{
-            //    GenerateScene();
-
-            //    tracer.TraceScene();
-
-            //    tracer.ExportDataToCSV();
-            //}
             StartCoroutine(SetCoroutine());
         }
 
         IEnumerator SetCoroutine()
         {
-            for(int i = 0; i < datasetSize; i++)
+            for (int i = 0; i < datasetSize; i++)
             {
                 GenerateScene();
-                yield return new WaitForSecondsRealtime(25);
+                yield return new WaitForSecondsRealtime(18);
                 tracer.TraceScene();
-                yield return new WaitForSecondsRealtime(5);
+                yield return new WaitForSecondsRealtime(4);
                 tracer.ExportDataToCSV();
                 yield return new WaitForSecondsRealtime(4);
             }
@@ -84,31 +76,74 @@ namespace SceneGenerator
             }
 
             float remainingDifficulty = GetDifficulty();
+
+            float realdiff = remainingDifficulty / 2f;
             GameObject dummy;
             loadedModels = new List<GameObject>();
+
+            int shelfcounter = 0;
+            int chaircounter = 0;
+            int tablecounter = 0;
 
             foreach(ModelData m in modelData.Items)
             {
                 foreach(string s in chosenCategories.Items)
                 {
-                    if (m.category.Equals(s))
+                    if (m.category.Equals(s) /*&& m.difficulty <= remainingDifficulty*/)
                     {
                         models.Add(m);
                     }
                 }
             }
 
-            while(remainingDifficulty > 0)
+            while(remainingDifficulty >= 0)
             {
                 ModelData model = models[Random.Range(0, models.Count)];
 
+                string cat = model.category;
+
+                if (cat.Equals("Bookshelf_4"))
+                {
+                    if(shelfcounter < (realdiff/3))
+                    {
+                        shelfcounter++;
+                    }
+                    else
+                    {
+                        continue;
+                    }
+                }
+                else if (cat.Equals("Chair_5"))
+                {
+                    if (chaircounter < (realdiff / 3))
+                    {
+                        chaircounter++;
+                    }
+                    else
+                    {
+                        continue;
+                    }
+                }
+                else if (cat.Equals("Desk_6"))
+                {
+                    if (tablecounter < (realdiff / 3))
+                    {
+                        tablecounter++;
+                    }
+                    else
+                    {
+                        continue;
+                    }
+                }
+
                 float size = model.scale.x;
 
-                Vector3 randomPosition = new Vector3(Random.Range(-2.5f + size / 2, 2.5f - size / 2), Random.Range(-0.5f, 0.5f), Random.Range(-2.5f + size / 2, 2.5f - size / 2));
+                Vector3 randomPosition = new Vector3(Random.Range(-2.5f + size, 2.5f - size), Random.Range(-0.5f, 0.5f), Random.Range(-2.5f + size, 2.5f - size));
 
                 if (modelLoader.LoadObjectWithMaterials(model, out dummy, basePos))
                 {
-                    remainingDifficulty -= model.difficulty;
+                    //remainingDifficulty -= model.difficulty;
+                    remainingDifficulty -= model.scale.x;
                     counter[model.category]++;
                     foreach(Transform child in dummy.transform.GetChild(0))
                     {
@@ -116,9 +151,7 @@ namespace SceneGenerator
                     }
                     loadedModels.Add(dummy);
                 }
-                //models.Remove(model);
             }
-            //AddRigidbody();
             
             StartCoroutine(ApplyGravity());
 
@@ -185,11 +218,12 @@ namespace SceneGenerator
 
         public float GetDifficulty()
         {
-            float difficulty = randomDiff ? Random.Range(1, 10) : diff.Value;
+            float difficulty = randomDiff ? Random.Range(1, 10.49f) : diff.Value;
             usedDiff = (int)difficulty;
-            tracer.perspectives = 6 - (int)(difficulty/2);
-            difficulty = 25 * Mathf.Pow(1.4f, difficulty) / (1 + 0.2f*(tracer.perspectives-1));
-            return difficulty;
+
+            tracer.perspectives = 6 - (int)(usedDiff/3);
+            //difficulty = (5 * difficulty) / (1 + 0.15f*(6 - tracer.perspectives));
+            return usedDiff*2f;
         }
 
         IEnumerator ApplyGravity()
@@ -204,7 +238,7 @@ namespace SceneGenerator
                 obj.AddComponent<Rigidbody>().useGravity = true;
             }
 
-            yield return new WaitForSecondsRealtime(10);
+            yield return new WaitForSecondsRealtime(8);
 
 
             foreach (GameObject obj in loadedModels)
@@ -219,7 +253,7 @@ namespace SceneGenerator
                 }
             }
 
-            yield return new WaitForSecondsRealtime(5);
+            yield return new WaitForSecondsRealtime(4);
 
             foreach (GameObject obj in loadedModels)
             {

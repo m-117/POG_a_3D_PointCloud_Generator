@@ -74,6 +74,7 @@ namespace SceneGenerator
             else return false;
         }
 
+
         public void ApplyMaterials(string[,] textures, GameObject model)
         {
             foreach(Transform childObject in model.transform.GetChild(0))
@@ -143,8 +144,17 @@ namespace SceneGenerator
         {
             Bounds bounds = CalculateLocalBounds(model);
 
-            float scalingFactor = Mathf.Max(Mathf.Max(scale.x / bounds.size.x, scale.y / bounds.size.y),
-                scale.z / bounds.size.z);
+            float scalingFactor = 1;
+
+            if(bounds.size.x < scale.x && bounds.size.y < scale.y && bounds.size.z < scale.z)
+            {
+                scalingFactor = scale.x / Mathf.Max(bounds.size.x, bounds.size.y, bounds.size.z);
+            }else
+            {
+                scalingFactor = Mathf.Min(scale.x / bounds.size.x, scale.y / bounds.size.y,
+                    scale.z / bounds.size.z);
+            }
+
 
             model.transform.localScale = new Vector3(scalingFactor, scalingFactor, scalingFactor);
 
@@ -159,6 +169,7 @@ namespace SceneGenerator
                 UnityEngine.Random.Range(-2.5f + (bounds.size.z), 2.5f - (bounds.size.z)));
 
             model.transform.Translate(randPos);
+            model.transform.rotation = UnityEngine.Random.rotation;
         }
 
         public void AdjustModelPosition(GameObject model, Vector3 basePos)

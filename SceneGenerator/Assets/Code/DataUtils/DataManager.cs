@@ -148,11 +148,11 @@ namespace SceneGenerator
             models = new List<string>();
         }
 
-        public void WriteToCSV(string content, int diff, string format, int dataPoints)
+        public void WriteToCSV(string content, int diff, string format, int dataPoints, int modelCount)
         {
             if (!Directory.Exists(Application.persistentDataPath + "/data")) Directory.CreateDirectory(Application.persistentDataPath + "/data");
-
-            string path = Application.persistentDataPath + "/data/SceneData_Diff_" + diff.ToString() + "_" + format + "_" + dataPoints + ".csv";
+            int i = (int)UnityEngine.Random.Range(0, 1000);
+            string path = Application.persistentDataPath + "/data/SceneData_Diff_" + diff.ToString() + "_" + format + "_" + dataPoints + "_" + modelCount + "_" + i + ".csv";
             File.WriteAllText(path, content);
         }
 

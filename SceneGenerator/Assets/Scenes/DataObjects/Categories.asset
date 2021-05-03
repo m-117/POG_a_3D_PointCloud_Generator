@@ -13,4 +13,11 @@ MonoBehaviour:
   m_Name: Categories
   m_EditorClassIdentifier: 
   Items:
-  - Table
+  - Bookshelf_4
+  - Chair_5
+  - Desk_6
+  - Vase_7
+  - Lamp_8
+  - Laptop_9
+  - Monitor_10
+  - Sofa_11

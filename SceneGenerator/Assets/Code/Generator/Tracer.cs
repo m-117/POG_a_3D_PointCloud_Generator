@@ -44,32 +44,32 @@ namespace SceneGenerator
 
         public void TraceScene()
         {
+
+
             DateTime startTime = DateTime.Now;
 
             Debug.Log("Start Trace Routine. Input is perspectives: " + perspectives + " and resolution:" + resolution);
 
             dataPoints = new List<Point>();
 
-            Trace(perspectives, resolution, "Default");
+            Trace(perspectives, resolution, "Default", true);
 
-            Trace(perspectives, 300, "Box");
-
-
+            Trace(perspectives, 200, "Box", true);
 
             UpdateTraceStats((DateTime.Now - startTime).Seconds);
         }
 
-        private Color CalcColor(RaycastHit hit)
+        private Color CalcColor(RaycastHit hit, bool shadows)
         {
-            if (hit.collider.gameObject.GetComponent<Label>().label.Equals("Wall"))
+            if (hit.collider.gameObject.GetComponent<Label>().label.Equals("Wall_2"))
             {
                 return Shade(new Color(0.1f, 0, 0, 1), hit);
             }
-            if (hit.collider.gameObject.GetComponent<Label>().label.Equals("Floor"))
+            if (hit.collider.gameObject.GetComponent<Label>().label.Equals("Floor_1"))
             {
                 return Shade(new Color(0, 0.1f, 0, 1), hit);
             }
-            if (hit.collider.gameObject.GetComponent<Label>().label.Equals("Ceiling"))
+            if (hit.collider.gameObject.GetComponent<Label>().label.Equals("Ceiling_0"))
             {
                 return Shade(new Color(0, 0, 0.1f, 1), hit);
             }
@@ -108,8 +108,15 @@ namespace SceneGenerator
                 tiling = renderer.material.mainTextureScale;
                 color = texture2D.GetPixel(Mathf.FloorToInt(pCoord.x * tiling.x), Mathf.FloorToInt(pCoord.y * tiling.y));
             }
+            if (shadows)
+            {
+                return Shade(color, hit);
+            }
+            else
+            {
+                return color;
+            }
 
-            return Shade(color, hit);
 
             //return color;
         }
@@ -138,7 +145,7 @@ namespace SceneGenerator
 
                 if (Physics.Raycast(ray, out shadeHit, 100f, 1 << LayerMask.NameToLayer("Default")))
                 {
-                    if (shadeHit.collider.gameObject.GetComponent<Label>().label.Equals("Light"))
+                    if (shadeHit.collider.gameObject.GetComponent<Label>().label.Equals("Light_3"))
                     {
                         cnt++;
                         dist = shadeHit.distance;
@@ -166,7 +173,7 @@ namespace SceneGenerator
             return c;
         }
 
-        public void Trace(int perspectives, int resolution, string layer)
+        public void Trace(int perspectives, int resolution, string layer, bool shadows)
         {
             Debug.Log("Starting Trace()");
 
@@ -192,6 +199,8 @@ namespace SceneGenerator
 
                         ray = activeCam.ViewportPointToRay(new Vector3(x, y, 0));
 
+                        //Debug.DrawRay(ray.origin, ray.direction * 10, Color.red, 100000f);
+
                         try
                         {
                             foreach (RaycastHit h in Physics.RaycastAll(ray, 100f, 1 << LayerMask.NameToLayer(layer)))
@@ -202,7 +211,7 @@ namespace SceneGenerator
                                 {
                                     coords = coords,
                                     type = h.collider.GetComponent<Label>().label,
-                                    color = CalcColor(h),
+                                    color = CalcColor(h, shadows),
                                     count = h.collider.gameObject.GetComponent<Label>().counter
                                 });
                             }
@@ -257,7 +266,7 @@ namespace SceneGenerator
                     .Append(p.color.r.ToString().Replace(",", ".")).Append(';')
                     .Append(p.color.g.ToString().Replace(",", ".")).Append(';')
                     .Append(p.color.b.ToString().Replace(",", ".")).Append(';')
-                    .Append(p.type).Append(';').Append(p.count.ToString());
+                    .Append(p.type.Split('_')[1]).Append(';').Append(p.count.ToString());
             }
 
             StringBuilder outputForDisplay = new StringBuilder("");
@@ -272,9 +281,9 @@ namespace SceneGenerator
                     .Append(p.color.b.ToString().Replace(",", ".")).Append('\n');
             }
 
-            dataManager.WriteToCSV(outputForAI.ToString(), sceneGen.usedDiff, "xyzrgblc", dataPoints.Count);
+            //dataManager.WriteToCSV(outputForAI.ToString(), sceneGen.usedDiff, "xyzrgblc", dataPoints.Count, sceneGen.loadedModels.Count);
 
-            dataManager.WriteToCSV(outputForDisplay.ToString(), sceneGen.usedDiff, "xyzrgb", dataPoints.Count);
+            dataManager.WriteToCSV(outputForDisplay.ToString(), sceneGen.usedDiff, "xyzrgb", dataPoints.Count, sceneGen.loadedModels.Count);
         }
 
         public void UpdateTraceStats(double timeToTrace)
@@ -293,13 +302,13 @@ namespace SceneGenerator
             traceCams.Add(GameObject.Find("TraceCamLeft").GetComponent<Camera>());
             traceCams.Add(GameObject.Find("TraceCamUp").GetComponent<Camera>());
 
-            GameObject.Find("PlaneDownCam").GetComponent<Label>().label = "Ceiling";
-            GameObject.Find("PlaneUpCam").GetComponent<Label>().label = "Floor";
-            GameObject.Find("PlaneFrontCam").GetComponent<Label>().label = "Wall";
-            GameObject.Find("PlaneBackCam").GetComponent<Label>().label = "Wall";
-            GameObject.Find("PlaneRightCam").GetComponent<Label>().label = "Wall";
-            GameObject.Find("PlaneLeftCam").GetComponent<Label>().label = "Wall";
-            GameObject.Find("LightDummy").GetComponent<Label>().label = "Light";
+            GameObject.Find("PlaneDownCam").GetComponent<Label>().label = "Ceiling_0";
+            GameObject.Find("PlaneUpCam").GetComponent<Label>().label = "Floor_1";
+            GameObject.Find("PlaneFrontCam").GetComponent<Label>().label = "Wall_2";
+            GameObject.Find("PlaneBackCam").GetComponent<Label>().label = "Wall_2";
+            GameObject.Find("PlaneRightCam").GetComponent<Label>().label = "Wall_2";
+            GameObject.Find("PlaneLeftCam").GetComponent<Label>().label = "Wall_2";
+            GameObject.Find("LightDummy").GetComponent<Label>().label = "Light_3";
             GameObject.Find("PlaneDownCam").GetComponent<Label>().counter = 1;
             GameObject.Find("PlaneUpCam").GetComponent<Label>().counter = 1;
             GameObject.Find("PlaneFrontCam").GetComponent<Label>().counter = 1;
