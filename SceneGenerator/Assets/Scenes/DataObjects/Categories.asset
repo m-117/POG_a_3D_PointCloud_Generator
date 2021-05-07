@@ -12,12 +12,4 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8135dde290e79724ca721ea985193b16, type: 3}
   m_Name: Categories
   m_EditorClassIdentifier: 
-  Items:
-  - Bookshelf_4
-  - Chair_5
-  - Desk_6
-  - Vase_7
-  - Lamp_8
-  - Laptop_9
-  - Monitor_10
-  - Sofa_11
+  Items: []
