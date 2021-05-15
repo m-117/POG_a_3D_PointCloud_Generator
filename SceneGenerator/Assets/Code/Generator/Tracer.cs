@@ -10,30 +10,35 @@ namespace SceneGenerator
 {
     public class Tracer : MonoBehaviour
     {
-        public int resolution;
-
-        public int perspectives;
-
+        /// <summary>
+        /// scene generator & data manager
+        /// </summary>
         public Generator sceneGen;
-
         public DataManager dataManager;
 
-        public CameraRuntimeSet traceCams;
+        /// <summary>
+        /// user input
+        /// </summary>
+        public int resolution;
+        public IntVariable noise;
+        public int perspectives;
 
+        /// <summary>
+        /// cameras
+        /// </summary>
+        public CameraRuntimeSet traceCams;
         public Camera activeCam;
 
+        /// <summary>
+        /// data points & trace stats
+        /// </summary>
         private IList<Point> dataPoints;
-
-        public Vector3 ambientCoefficient = new Vector3(0.1f, 0.1f, 0.1f);
-
-        public IntVariable noise;
-
         public Text pointCount;
-
         public Text traceTime;
 
-        public bool displayActive;
-
+        /// <summary>
+        /// Sub class for point data.
+        /// </summary>
         private class Point
         {
             public Vector3 coords { get; set; }
@@ -42,13 +47,12 @@ namespace SceneGenerator
             public int count { get; set; }
         }
 
+        /// <summary>
+        /// Start trace operation. Seperate trace ops for models and box.
+        /// </summary>
         public void TraceScene()
         {
-
-
             DateTime startTime = DateTime.Now;
-
-            Debug.Log("Start Trace Routine. Input is perspectives: " + perspectives + " and resolution:" + resolution);
 
             dataPoints = new List<Point>();
 
@@ -59,6 +63,69 @@ namespace SceneGenerator
             UpdateTraceStats((DateTime.Now - startTime).Seconds);
         }
 
+        /// <summary>
+        /// Trace scene using raycasting
+        /// </summary>
+        /// <param name="perspectives"> number of used trace cameras </param>
+        /// <param name="resolution"> amount of rays used for tracing </param>
+        /// <param name="layer"> raycast target layer (models/box) </param>
+        /// <param name="shadows"> calulate shadows if true, omit shadows if false </param>
+        public void Trace(int perspectives, int resolution, string layer, bool shadows)
+        {
+            Debug.Log("Starting Trace()");
+
+            float step = 1.0f / resolution;
+
+            float x;
+            float y;
+
+            Ray ray;
+
+            Point p = new Point();
+
+            for (int k = 0; k < perspectives; k++)
+            {
+                activeCam = traceCams.Items[k];
+
+                for (int i = 0; i < resolution; i++)
+                {
+                    for (int j = 0; j < resolution; j++)
+                    {
+                        x = i * step + UnityEngine.Random.Range(-step * noise.Value, step * noise.Value);
+                        y = j * step + UnityEngine.Random.Range(-step * noise.Value, step * noise.Value);
+
+                        ray = activeCam.ViewportPointToRay(new Vector3(x, y, 0));
+
+                        try
+                        {
+                            foreach (RaycastHit h in Physics.RaycastAll(ray, 100f, 1 << LayerMask.NameToLayer(layer)))
+                            {
+                                Vector3 coords = new Vector3(h.point.x + 500, h.point.y, h.point.z - 500);
+
+                                dataPoints.Add(new Point()
+                                {
+                                    coords = coords,
+                                    type = h.collider.GetComponent<Label>().label,
+                                    color = CalcColor(h, shadows),
+                                    count = h.collider.gameObject.GetComponent<Label>().counter
+                                });
+                            }
+                        }
+                        catch (Exception)
+                        {
+                        }
+                    }
+                }
+            }
+        }
+
+        /// <summary>
+        /// Get color using hit info (uv-coordinates, triangle...) from textures.
+        /// Get fixed color values for box elements.
+        /// </summary>
+        /// <param name="hit"> RaycastHit object containing all info </param>
+        /// <param name="shadows"> calulate shadows if true, omit shadows if false </param>
+        /// <returns> Point color </returns>
         private Color CalcColor(RaycastHit hit, bool shadows)
         {
             Color color = new Color(0, 0, 0);
@@ -119,11 +186,14 @@ namespace SceneGenerator
             {
                 return color;
             }
-
-
-            //return color;
         }
 
+        /// <summary>
+        /// Calculate shaded color using modified local illumination.
+        /// Soft shadows are created by sampling the light source.
+        /// </summary>
+        /// <param name="color"> Texture color of hit point </param>
+        /// <param name="hit"> RaycastHit object containing all info </param>
         private Color Shade(Color color, RaycastHit hit)
         {
             Light l = GameObject.Find("SceneLight").GetComponent<Light>();
@@ -167,6 +237,11 @@ namespace SceneGenerator
             return ClampColor(shadedColor);
         }
 
+        /// <summary>
+        /// Clamp rgb color values
+        /// </summary>
+        /// <param name="c">Point color</param>
+        /// <returns>clamped color</returns>
         public Color ClampColor(Color c)
         {
             c.r = Mathf.Clamp(c.r, 0, 1.0f);
@@ -176,86 +251,9 @@ namespace SceneGenerator
             return c;
         }
 
-        public void Trace(int perspectives, int resolution, string layer, bool shadows)
-        {
-            Debug.Log("Starting Trace()");
-
-            float step = 1.0f / resolution;
-
-            float x;
-            float y;
-
-            Ray ray;
-
-            Point p = new Point();
-
-            for (int k = 0; k < perspectives; k++)
-            {
-                activeCam = traceCams.Items[k];
-
-                for (int i = 0; i < resolution; i++)
-                {
-                    for (int j = 0; j < resolution; j++)
-                    {
-                        x = i * step + UnityEngine.Random.Range(-step * noise.Value, step * noise.Value);
-                        y = j * step + UnityEngine.Random.Range(-step * noise.Value, step * noise.Value);
-
-                        ray = activeCam.ViewportPointToRay(new Vector3(x, y, 0));
-
-                        //Debug.DrawRay(ray.origin, ray.direction * 10, Color.red, 100000f);
-
-                        try
-                        {
-                            foreach (RaycastHit h in Physics.RaycastAll(ray, 100f, 1 << LayerMask.NameToLayer(layer)))
-                            {
-                                Vector3 coords = new Vector3(h.point.x + 500, h.point.y, h.point.z - 500);
-
-                                dataPoints.Add(new Point()
-                                {
-                                    coords = coords,
-                                    type = h.collider.GetComponent<Label>().label,
-                                    color = CalcColor(h, shadows),
-                                    count = h.collider.gameObject.GetComponent<Label>().counter
-                                });
-                            }
-                        }
-                        catch(Exception)
-                        {
-                        }
-                        
-                    }
-                }
-            }
-        }
-
-        public void DisplayDatapoints()
-        {
-            if (displayActive)
-            {
-                Destroy(GameObject.Find("displayParent"));
-                displayActive = false;
-            }
-            else
-            {
-                GameObject parent = new GameObject();
-                parent.name = "displayParent";
-
-                foreach (Point p in dataPoints)
-                {
-                    GameObject sphere = GameObject.CreatePrimitive(PrimitiveType.Sphere);
-                    sphere.transform.parent = parent.transform;
-                    sphere.transform.localScale = new Vector3(0.01f, 0.01f, 0.01f);
-                    sphere.transform.position = p.coords;
-                    sphere.GetComponent<Renderer>().material.SetColor("_Color", p.color);
-                    sphere.AddComponent<Label>().label = p.type;
-                    sphere.GetComponent<Collider>().enabled = false;
-                    sphere.name = "Sphere";
-                }
-                displayActive = true;
-            }
-        }
-
-
+        /// <summary>
+        /// Builds csv string for all point cloud elements.
+        /// </summary>
         public void ExportDataToCSV()
         {
 
@@ -272,23 +270,27 @@ namespace SceneGenerator
                     .Append(p.type.Split('_')[1]).Append(';').Append(p.count.ToString());
             }
 
-            StringBuilder outputForDisplay = new StringBuilder("");
+            //StringBuilder outputForDisplay = new StringBuilder("");
 
-            foreach (Point p in dataPoints)
-            {
-                outputForDisplay.Append(p.coords.x.ToString().Replace(",", ".")).Append(';')
-                    .Append(p.coords.y.ToString().Replace(",", ".")).Append(';')
-                    .Append(p.coords.z.ToString().Replace(",", ".")).Append(';')
-                    .Append(p.color.r.ToString().Replace(",", ".")).Append(';')
-                    .Append(p.color.g.ToString().Replace(",", ".")).Append(';')
-                    .Append(p.color.b.ToString().Replace(",", ".")).Append('\n');
-            }
+            //foreach (Point p in dataPoints)
+            //{
+            //    outputForDisplay.Append(p.coords.x.ToString().Replace(",", ".")).Append(';')
+            //        .Append(p.coords.y.ToString().Replace(",", ".")).Append(';')
+            //        .Append(p.coords.z.ToString().Replace(",", ".")).Append(';')
+            //        .Append(p.color.r.ToString().Replace(",", ".")).Append(';')
+            //        .Append(p.color.g.ToString().Replace(",", ".")).Append(';')
+            //        .Append(p.color.b.ToString().Replace(",", ".")).Append('\n');
+            //}
 
-            //dataManager.WriteToCSV(outputForAI.ToString(), sceneGen.usedDiff, "xyzrgblc", dataPoints.Count, sceneGen.loadedModels.Count);
+            dataManager.WriteToCSV(outputForAI.ToString(), sceneGen.usedDiff, "xyzrgblc", dataPoints.Count, sceneGen.loadedModels.Count);
 
-            dataManager.WriteToCSV(outputForDisplay.ToString(), sceneGen.usedDiff, "xyzrgb", dataPoints.Count, sceneGen.loadedModels.Count);
+            //dataManager.WriteToCSV(outputForDisplay.ToString(), sceneGen.usedDiff, "xyzrgb", dataPoints.Count, sceneGen.loadedModels.Count);
         }
 
+        /// <summary>
+        /// Updates trace stats UI elements.
+        /// </summary>
+        /// <param name="timeToTrace"> Time needed for trace operation </param>
         public void UpdateTraceStats(double timeToTrace)
         {
             pointCount.text = dataPoints.Count.ToString();
