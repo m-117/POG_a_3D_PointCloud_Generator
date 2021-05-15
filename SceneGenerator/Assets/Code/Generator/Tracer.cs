@@ -61,24 +61,27 @@ namespace SceneGenerator
 
         private Color CalcColor(RaycastHit hit, bool shadows)
         {
-            if (hit.collider.gameObject.GetComponent<Label>().label.Equals("Wall_2"))
-            {
-                return Shade(new Color(0.1f, 0, 0, 1), hit);
-            }
-            if (hit.collider.gameObject.GetComponent<Label>().label.Equals("Floor_1"))
-            {
-                return Shade(new Color(0, 0.1f, 0, 1), hit);
-            }
-            if (hit.collider.gameObject.GetComponent<Label>().label.Equals("Ceiling_0"))
-            {
-                return Shade(new Color(0, 0, 0.1f, 1), hit);
-            }
+            Color color = new Color(0, 0, 0);
 
+            switch (hit.collider.gameObject.GetComponent<Label>().label)
+            {
+                case "Ceiling_0":
+                    if(shadows)return Shade(new Color(0, 0, 0.1f, 1), hit);
+                    else return new Color(0, 0, 0.5f, 1);
+                case "Floor_1":
+                    if (shadows) return Shade(new Color(0, 0.1f, 0, 1), hit);
+                    else return new Color(0, 0.5f, 0, 1);
+                case "Wall_2":
+                    if (shadows) return Shade(new Color(0.1f, 0, 0, 1), hit);
+                    else return new Color(0.5f, 0, 0, 1);
+                default:
+                    break;
+            }
 
             Mesh mesh = hit.collider.GetComponent<MeshFilter>().mesh;
             Renderer renderer = hit.collider.GetComponent<MeshRenderer>();
             Texture2D texture2D = null;
-            Color color = new Color(0, 0, 0);
+
             Vector2 tiling;
             Vector2 pCoord = hit.textureCoord;
 
